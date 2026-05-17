@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Backend/">
+    <Project Path="src/Backend/FaceSync.Api/FaceSync.Api.csproj" />
+    <Project Path="src/Backend/FaceSync.Application/FaceSync.Application.csproj" />
+    <Project Path="src/Backend/FaceSync.Communication/FaceSync.Communication.csproj" />
+    <Project Path="src/Backend/FaceSync.Domain/FaceSync.Domain.csproj" />
+    <Project Path="src/Backend/FaceSync.Exceptions/FaceSync.Exceptions.csproj" />
+    <Project Path="src/Backend/FaceSync.Infra/FaceSync.Infra.csproj" />
+  </Folder>
+  <Folder Name="/src/Frontend/" />
+</Solution>
