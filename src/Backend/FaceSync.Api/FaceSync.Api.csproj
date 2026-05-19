@@ -15,4 +15,15 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FaceSync.Application\FaceSync.Application.csproj" />
+    <ProjectReference Include="..\FaceSync.Infra\FaceSync.Infra.csproj" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Update="CascadeClassifiers\haarcascade_frontalface_default.xml">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>

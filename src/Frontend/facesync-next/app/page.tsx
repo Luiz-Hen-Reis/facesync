@@ -14,7 +14,7 @@ interface RecognitionResult {
   userId: string | null;
   name: string | null;
   similarity: number;
-  boundingBox: BoundingBox;
+  box: BoundingBox;
   recognized: boolean;
 }
 
@@ -65,25 +65,40 @@ export default function Home() {
 
       if (!ctx) return;
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const displayedWidth = video.clientWidth;
+      const displayedHeight = video.clientHeight;
+
+      canvas.width = displayedWidth;
+      canvas.height = displayedHeight;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const scaleX = displayedWidth / video.videoWidth;
+      const scaleY = displayedHeight / video.videoHeight;
+
+      const x = box.x * scaleX;
+      const y = box.y * scaleY;
+      const width = box.width * scaleX;
+      const height = box.height * scaleY;
 
       ctx.strokeStyle = recognized ? "#22c55e" : "#ef4444";
       ctx.lineWidth = 4;
 
-      ctx.strokeRect(box.x, box.y, box.width, box.height);
+      ctx.strokeRect(x, y, width, height);
 
       ctx.fillStyle = recognized ? "#22c55e" : "#ef4444";
 
       ctx.font = "16px sans-serif";
 
-      ctx.fillText(
-        `${label} ${Math.round(similarity * 100)}%`,
-        box.x,
-        box.y - 10,
-      );
+      ctx.fillText(`${label} ${Math.round(similarity * 100)}%`, x, y - 10);
+
+      console.log({
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight,
+        clientWidth: video.clientWidth,
+        clientHeight: video.clientHeight,
+        box,
+      });
     },
     [],
   );
@@ -165,10 +180,12 @@ export default function Home() {
 
         connection!.on("RecognitionResult", (data: RecognitionResult) => {
           setResult(data);
+
           setRecognizedName(data.name);
+          console.log("data", data);
 
           drawBoundingBox(
-            data.boundingBox,
+            data.box,
             data.name ?? "Desconhecido",
             data.recognized,
             data.similarity,
@@ -191,10 +208,10 @@ export default function Home() {
         <p className="text-sm text-zinc-400 mt-2">Status: {connectionStatus}</p>
       </div>
 
-      <div className="relative">
+      <div className="relative w-[700px]">
         <video
           ref={videoRef}
-          className="w-[700px] rounded-xl border border-zinc-800"
+          className="w-full rounded-xl border border-zinc-800"
           autoPlay
           muted
           playsInline
@@ -202,7 +219,7 @@ export default function Home() {
 
         <canvas
           ref={overlayCanvasRef}
-          className="absolute inset-0 w-full h-full"
+          className="absolute inset-0 w-full h-full pointer-events-none"
         />
 
         <canvas ref={captureCanvasRef} className="hidden" />

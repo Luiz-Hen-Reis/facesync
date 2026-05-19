@@ -1,4 +1,6 @@
 using FaceSync.Api.Hubs;
+using FaceSync.Application;
+using FaceSync.Infra;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,10 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
+
+builder.Services.AddApplication();
+builder.Services.AddInfra();
 
 var app = builder.Build();
 
