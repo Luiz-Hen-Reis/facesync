@@ -6,6 +6,8 @@ public class FaceHub : Hub
 {
     public async Task SendFrame(string frame)
     {
+        Console.WriteLine("FRAME RECEBIDO COM SUCESSO!" + " " + frame);
+
         var result = new
         {
             recognized = true,

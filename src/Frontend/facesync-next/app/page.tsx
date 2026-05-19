@@ -23,6 +23,10 @@ type ConnectionStatus = "disconnected" | "connecting" | "connected";
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const captureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const connection = useWebSocket();
 
   const [recognizedName, setRecognizedName] = useState<string | null>(null);
 
@@ -84,10 +88,27 @@ export default function Home() {
     [],
   );
 
+  async function startFrameLoop() {
+    frameIntervalRef.current = setInterval(async () => {
+      const frame = await captureFrame();
+
+      if (!frame) return;
+
+      try {
+        if (connection && connection.state === "Connected") {
+          connection.invoke("SendFrame", frame);
+        }
+      } catch (error) {
+        console.error("Erro ao enviar frame:", error);
+      }
+    }, 350);
+  }
+
   async function startRecognition() {
     setRecognizing(true);
 
     await startCamera();
+    await startFrameLoop();
   }
 
   function stopRecognition() {
@@ -108,26 +129,42 @@ export default function Home() {
 
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
     }
+
+    if (frameIntervalRef.current) {
+      clearInterval(frameIntervalRef.current);
+    }
+  }
+
+  async function captureFrame() {
+    const video = videoRef.current;
+    const canvas = captureCanvasRef.current;
+
+    if (!video || !canvas) return null;
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return null;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL("image/jpeg", 0.7);
   }
 
   useEffect(() => {
-    const connection = useWebSocket();
+    if (!connection) return;
 
     async function connect() {
       try {
         setConnectionStatus("connecting");
-
-        await connection.start();
-
+        await connection!.start();
         console.log("SignalR conectado");
-
         setConnectionStatus("connected");
 
-        connection.on("RecognitionResult", (data: RecognitionResult) => {
-          console.log(data);
-
+        connection!.on("RecognitionResult", (data: RecognitionResult) => {
           setResult(data);
-
           setRecognizedName(data.name);
 
           drawBoundingBox(
@@ -139,17 +176,12 @@ export default function Home() {
         });
       } catch (err) {
         console.error(err);
-
         setConnectionStatus("disconnected");
       }
     }
 
     connect();
-
-    return () => {
-      connection.stop();
-    };
-  }, [drawBoundingBox]);
+  }, [connection, drawBoundingBox]);
 
   return (
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 p-8">
@@ -172,6 +204,8 @@ export default function Home() {
           ref={overlayCanvasRef}
           className="absolute inset-0 w-full h-full"
         />
+
+        <canvas ref={captureCanvasRef} className="hidden" />
       </div>
 
       {result && (
