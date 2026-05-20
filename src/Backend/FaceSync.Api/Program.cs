@@ -1,6 +1,8 @@
 using FaceSync.Api.Hubs;
 using FaceSync.Application;
 using FaceSync.Infra;
+using FaceSync.Infra.Extensions;
+using FaceSync.Infra.Migrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +26,7 @@ builder.Services.AddCors(options =>
 
 
 builder.Services.AddApplication();
-builder.Services.AddInfra();
+builder.Services.AddInfra(builder.Configuration);
 
 var app = builder.Build();
 
@@ -43,4 +45,14 @@ app.MapControllers();
 
 app.MapHub<FaceHub>("/hubs/facesync");
 
+await MigrateDatabase();
+
 app.Run();
+
+async Task MigrateDatabase()
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var stringConnection = app.Configuration.ConnectionString();
+
+    DatabaseMigration.Migrate(stringConnection, scope.ServiceProvider);
+}
