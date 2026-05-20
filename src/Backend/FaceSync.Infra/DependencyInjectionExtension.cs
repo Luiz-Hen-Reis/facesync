@@ -1,4 +1,5 @@
-﻿using FaceSync.Infra.DataAccess;
+﻿using FaceSync.Domain.Repositories;
+using FaceSync.Infra.DataAccess;
 using FaceSync.Infra.Extensions;
 using FaceSync.Infra.Services.FaceDetection;
 using FluentMigrator.Runner;
@@ -16,6 +17,8 @@ public static class DependencyInjectionExtension
         AddDbContext(services, configuration);
         AddFluentMigrator(services, configuration);
         AddServices(services);
+
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 
     private static void AddServices(IServiceCollection services)
