@@ -44,9 +44,11 @@ public class FaceRecognitionService : IFaceRecognitionService
             }
         }
 
+        var inputName = _session.InputMetadata.Keys.First();
+
         var inputs = new List<NamedOnnxValue>
         {
-            NamedOnnxValue.CreateFromTensor("data", input)
+            NamedOnnxValue.CreateFromTensor(inputName, input)
         };
 
         using var results = _session.Run(inputs);

@@ -24,7 +24,6 @@ public class FaceHub : Hub
 
     public async Task SendFrame(string frame)
     {
-        Console.WriteLine($"Received frame of size: {frame.Length} characters");
 
         var request = new RequestDetectFace
         {

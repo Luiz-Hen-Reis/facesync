@@ -89,6 +89,7 @@ function CameraView({
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const registeringRef = useRef(false);
 
   const connection = useWebSocket();
   const connectionRef = useRef(connection);
@@ -100,9 +101,9 @@ function CameraView({
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>("disconnected");
   const [result, setResult] = useState<RecognitionResult | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
   const [registerStatus, setRegisterStatus] = useState<RegisterStatus>("idle");
   const [registerMessage, setRegisterMessage] = useState<string | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
 
   const clearOverlay = useCallback(() => {
     const canvas = overlayCanvasRef.current;
@@ -144,7 +145,7 @@ function CameraView({
       ctx.strokeRect(x, y, w, h);
       ctx.fillStyle = recognized ? "#22c55e" : "#ef4444";
       ctx.font = "14px sans-serif";
-      ctx.fillText(`${label} ${Math.round(similarity * 100)}%`, x, y - 10);
+      if (label) ctx.fillText(label, x, y - 10);
     },
     [],
   );
@@ -155,7 +156,6 @@ function CameraView({
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
     }
-    setCameraActive(true);
   }
 
   async function captureFrame() {
@@ -170,29 +170,7 @@ function CameraView({
     return canvas.toDataURL("image/jpeg", 0.7);
   }
 
-  async function handleCaptureFace() {
-    if (!connectionRef.current || connectionRef.current.state !== "Connected")
-      return;
-
-    const frame = await captureFrame();
-    if (!frame) return;
-
-    setRegisterStatus("capturing");
-    setRegisterMessage(null);
-
-    try {
-      await connectionRef.current.invoke("RegisterFace", {
-        name: userName,
-        frame,
-      });
-    } catch (error) {
-      console.error("Erro ao registrar rosto:", error);
-      setRegisterStatus("error");
-      setRegisterMessage("Erro ao registrar. Tente novamente.");
-    }
-  }
-
-  function startRecognitionLoop() {
+  function startFrameLoop() {
     frameIntervalRef.current = setInterval(async () => {
       const frame = await captureFrame();
       if (!frame) return;
@@ -231,9 +209,7 @@ function CameraView({
   }
 
   useEffect(() => {
-    startCamera().then(() => {
-      if (mode === "recognize") startRecognitionLoop();
-    });
+    startCamera().then(() => startFrameLoop());
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -259,14 +235,39 @@ function CameraView({
             setResult(data);
             drawBoundingBox(
               data.box,
-              data.name ?? "Desconhecido",
+              mode === "register" ? "" : (data.name ?? "Desconhecido"),
               data.recognized,
               data.similarity,
             );
+            if (mode === "register" && !registeringRef.current) {
+              registeringRef.current = true;
+              if (frameIntervalRef.current)
+                clearInterval(frameIntervalRef.current);
+              if (clearTimeoutRef.current)
+                clearTimeout(clearTimeoutRef.current);
+              setRegisterStatus("capturing");
+              setTimeout(() => {
+                captureFrame().then((frame) => {
+                  if (!frame) return;
+                  connectionRef.current
+                    ?.invoke("RegisterFace", { name: userName, frame })
+                    .catch(() => {
+                      registeringRef.current = false;
+                      setRegisterStatus("error");
+                      setRegisterMessage("Erro ao registrar. Tente novamente.");
+                    });
+                });
+              }, 1500);
+            }
           },
         );
 
         connection!.on("FaceRegistered", (message: string) => {
+          if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+          if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+          const stream = videoRef.current?.srcObject as MediaStream;
+          stream?.getTracks().forEach((t) => t.stop());
+          clearOverlay();
           setRegisterStatus("success");
           setRegisterMessage(message);
         });
@@ -353,54 +354,46 @@ function CameraView({
       </div>
 
       {isRegister ? (
-        <div className="flex flex-col items-center gap-3 w-full max-w-2xl">
+        <div className="h-14 flex flex-col items-center justify-center gap-2">
           {registerStatus === "idle" && (
             <p className="text-sm text-zinc-400 text-center">
-              Posicione seu rosto no centro da câmera e clique em{" "}
-              <span className="text-white font-medium">Capturar</span> quando
-              estiver pronto.
+              Posicione seu rosto na câmera — o registro ocorre automaticamente.
             </p>
           )}
-
           {registerStatus === "capturing" && (
             <p className="text-sm text-zinc-400 text-center animate-pulse">
-              Processando...
+              Registrando...
             </p>
           )}
-
           {registerStatus === "success" && (
-            <p className="text-sm text-green-400 text-center">
-              {registerMessage}
-            </p>
+            <>
+              <p className="text-sm text-green-400 text-center">
+                {registerMessage}
+              </p>
+              <button
+                onClick={handleBack}
+                className="bg-zinc-800 border border-zinc-600 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-zinc-700 transition-colors"
+              >
+                Voltar ao início
+              </button>
+            </>
           )}
-
           {registerStatus === "error" && (
-            <p className="text-sm text-red-400 text-center">
-              {registerMessage}
-            </p>
-          )}
-
-          {registerStatus !== "success" && (
-            <button
-              onClick={handleCaptureFace}
-              disabled={
-                !cameraActive ||
-                connectionStatus !== "connected" ||
-                registerStatus === "capturing"
-              }
-              className="bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-semibold text-sm hover:bg-indigo-500 transition-colors"
-            >
-              {registerStatus === "capturing" ? "Capturando…" : "Capturar face"}
-            </button>
-          )}
-
-          {registerStatus === "success" && (
-            <button
-              onClick={handleBack}
-              className="bg-zinc-800 border border-zinc-600 text-white px-8 py-3 rounded-xl font-semibold text-sm hover:bg-zinc-700 transition-colors"
-            >
-              Voltar ao início
-            </button>
+            <>
+              <p className="text-sm text-red-400 text-center">
+                {registerMessage}
+              </p>
+              <button
+                onClick={() => {
+                  registeringRef.current = false;
+                  setRegisterStatus("idle");
+                  startFrameLoop();
+                }}
+                className="bg-zinc-800 border border-zinc-600 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-zinc-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </>
           )}
         </div>
       ) : (
