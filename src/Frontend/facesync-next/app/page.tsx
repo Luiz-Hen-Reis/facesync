@@ -217,66 +217,71 @@ function CameraView({
   useEffect(() => {
     if (!connection) return;
 
-    async function connect() {
-      try {
-        setConnectionStatus("connecting");
-        await connection!.start();
-        setConnectionStatus("connected");
+    connection.onreconnecting(() => setConnectionStatus("connecting"));
+    connection.onreconnected(() => setConnectionStatus("connected"));
+    connection.onclose(() => setConnectionStatus("disconnected"));
 
-        connection!.on(
-          "RecognitionResult",
-          (data: RecognitionResult | null) => {
-            if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-            if (!data) {
-              clearOverlay();
-              setResult(null);
-              return;
-            }
-            setResult(data);
-            drawBoundingBox(
-              data.box,
-              mode === "register" ? "" : (data.name ?? "Desconhecido"),
-              data.recognized,
-              data.similarity,
-            );
-            if (mode === "register" && !registeringRef.current) {
-              registeringRef.current = true;
-              if (frameIntervalRef.current)
-                clearInterval(frameIntervalRef.current);
-              if (clearTimeoutRef.current)
-                clearTimeout(clearTimeoutRef.current);
-              setRegisterStatus("capturing");
-              setTimeout(() => {
-                captureFrame().then((frame) => {
-                  if (!frame) return;
-                  connectionRef.current
-                    ?.invoke("RegisterFace", { name: userName, frame })
-                    .catch(() => {
-                      registeringRef.current = false;
-                      setRegisterStatus("error");
-                      setRegisterMessage("Erro ao registrar. Tente novamente.");
-                    });
-                });
-              }, 1500);
-            }
-          },
-        );
-
-        connection!.on("FaceRegistered", (message: string) => {
-          if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
-          if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-          const stream = videoRef.current?.srcObject as MediaStream;
-          stream?.getTracks().forEach((t) => t.stop());
-          clearOverlay();
-          setRegisterStatus("success");
-          setRegisterMessage(message);
-        });
-      } catch {
-        setConnectionStatus("disconnected");
+    connection.on("RecognitionResult", (data: RecognitionResult | null) => {
+      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+      if (!data) {
+        clearOverlay();
+        setResult(null);
+        return;
       }
-    }
+      setResult(data);
+      drawBoundingBox(
+        data.box,
+        mode === "register" ? "" : (data.name ?? "Desconhecido"),
+        data.recognized,
+        data.similarity,
+      );
+      if (mode === "register" && !registeringRef.current) {
+        registeringRef.current = true;
+        if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+        if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+        setRegisterStatus("capturing");
+        setTimeout(() => {
+          captureFrame().then((frame) => {
+            if (!frame) return;
+            connectionRef.current
+              ?.invoke("RegisterFace", { name: userName, frame })
+              .catch(() => {
+                registeringRef.current = false;
+                setRegisterStatus("error");
+                setRegisterMessage("Erro ao registrar. Tente novamente.");
+              });
+          });
+        }, 1500);
+      }
+    });
 
-    connect();
+    connection.on("FaceRegistered", (message: string) => {
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+      const stream = videoRef.current?.srcObject as MediaStream;
+      stream?.getTracks().forEach((t) => t.stop());
+      clearOverlay();
+      setRegisterStatus("success");
+      setRegisterMessage(message);
+    });
+
+    connection.on("RegisterError", (message: string) => {
+      registeringRef.current = false;
+      setRegisterStatus("error");
+      setRegisterMessage(message);
+    });
+
+    setConnectionStatus("connecting");
+    connection
+      .start()
+      .then(() => setConnectionStatus("connected"))
+      .catch(() => setConnectionStatus("disconnected"));
+
+    return () => {
+      connection.off("RecognitionResult");
+      connection.off("FaceRegistered");
+      connection.off("RegisterError");
+    };
   }, [connection, drawBoundingBox, clearOverlay]);
 
   const isRegister = mode === "register";
