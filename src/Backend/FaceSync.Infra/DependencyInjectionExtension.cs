@@ -1,7 +1,10 @@
 ﻿using FaceSync.Domain.Repositories;
+using FaceSync.Domain.Repositories.UserFace;
 using FaceSync.Infra.DataAccess;
+using FaceSync.Infra.DataAccess.Repositories.UserFace;
 using FaceSync.Infra.Extensions;
 using FaceSync.Infra.Services.FaceDetection;
+using FaceSync.Infra.Services.FaceRecognition;
 using FluentMigrator.Runner;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,13 +20,19 @@ public static class DependencyInjectionExtension
         AddDbContext(services, configuration);
         AddFluentMigrator(services, configuration);
         AddServices(services);
+        AddRepositories(services);
+    }
 
+    private static void AddRepositories(IServiceCollection services)
+    {
+        services.AddScoped<IUserFaceWriteOnlyRepository, UserFaceRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 
     private static void AddServices(IServiceCollection services)
     {
         services.AddSingleton<IFaceDetectionService, FaceDetectionService>();
+        services.AddSingleton<IFaceRecognitionService, FaceRecognitionService>();
     }
 
     private static void AddDbContext(IServiceCollection services, IConfiguration configuration)

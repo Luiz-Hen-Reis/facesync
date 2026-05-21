@@ -1,4 +1,5 @@
-﻿using FaceSync.Communication.Requests;
+﻿using FaceSync.Application.Helpers;
+using FaceSync.Communication.Requests;
 using FaceSync.Communication.Responses;
 using FaceSync.Infra.Services.FaceDetection;
 
@@ -16,9 +17,7 @@ public class DetectFaceUseCase : IDetectFaceUseCase
     public ResponseDetectFace Execute(
     RequestDetectFace request)
     {
-        var base64 = request.Frame.Split(',')[1];
-
-        var imageBytes = Convert.FromBase64String(base64);
+        var imageBytes = ImageHelper.ConvertBase64ToBytes(request.Frame);
 
         var faces = _faceDetectionService.DetectFaces(imageBytes);
 
