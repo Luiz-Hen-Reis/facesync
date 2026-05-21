@@ -26,6 +26,7 @@ public static class DependencyInjectionExtension
     private static void AddRepositories(IServiceCollection services)
     {
         services.AddScoped<IUserFaceWriteOnlyRepository, UserFaceRepository>();
+        services.AddScoped<IUserFaceReadOnlyRepository, UserFaceRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 

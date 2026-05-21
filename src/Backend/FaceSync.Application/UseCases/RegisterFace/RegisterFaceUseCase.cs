@@ -3,6 +3,7 @@ using FaceSync.Communication.Requests;
 using FaceSync.Domain.Entities;
 using FaceSync.Domain.Repositories;
 using FaceSync.Domain.Repositories.UserFace;
+using FaceSync.Infra.DataAccess.Repositories.UserFace;
 using FaceSync.Infra.Services.FaceDetection;
 using FaceSync.Infra.Services.FaceRecognition;
 
@@ -10,20 +11,25 @@ namespace FaceSync.Application.UseCases.RegisterFace;
 
 public class RegisterFaceUseCase : IRegisterFaceUseCase
 {
+    private const float SimilarityThreshold = 0.6f;
+
     private readonly IFaceDetectionService _faceDetectionService;
     private readonly IFaceRecognitionService _faceRecognitionService;
-    private readonly IUserFaceWriteOnlyRepository _userFaceRepository;
+    private readonly IUserFaceWriteOnlyRepository _userFaceWriteOnlyRepository;
+    private readonly IUserFaceReadOnlyRepository _userFaceReadOnlyRepository;
     private readonly IUnitOfWork _unitOfWork;
 
 
     public RegisterFaceUseCase(IFaceDetectionService faceDetectionService,
         IFaceRecognitionService faceRecognitionService,
-        IUserFaceWriteOnlyRepository userFaceRepository,
+        IUserFaceWriteOnlyRepository userFaceWriteOnlyRepository,
+        IUserFaceReadOnlyRepository userFaceReadOnlyRepository,
         IUnitOfWork unitOfWork)
     {
         _faceDetectionService = faceDetectionService;
         _faceRecognitionService = faceRecognitionService;
-        _userFaceRepository = userFaceRepository;
+        _userFaceWriteOnlyRepository = userFaceWriteOnlyRepository;
+        _userFaceReadOnlyRepository = userFaceReadOnlyRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -45,18 +51,23 @@ public class RegisterFaceUseCase : IRegisterFaceUseCase
         }
 
 
-        var embeddings = _faceRecognitionService.GenerateEmbeddings(imageBytes, faces[0]);
+        var newEmbedding = _faceRecognitionService.GenerateEmbeddings(imageBytes, faces[0]);
 
-        // checar se já existe um registro com o mesmo rosto
+        var existing = await _userFaceReadOnlyRepository.ListAll();
 
-        var userFace = new UserFace
+        var duplicate = existing.FirstOrDefault(u => 
+            EmbeddingHelper.CosineSimilarity(u.Embeddings, newEmbedding) > SimilarityThreshold);
+
+        if (duplicate is not null)
+            throw new Exception($"Rosto já cadastrado como '{duplicate.Name}'");
+
+        await _userFaceWriteOnlyRepository.Add(new UserFace
         {
             Name = request.Name,
-            Embeddings = embeddings
-        };
+            Embeddings = newEmbedding
+        });
 
 
-        await _userFaceRepository.Add(userFace);
         await _unitOfWork.Commit();
     }
 }
