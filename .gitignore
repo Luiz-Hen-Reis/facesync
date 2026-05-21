@@ -40,12 +40,6 @@ appsettings.Development.json
 secrets.json
 
 # =========================
-# Entity Framework
-# =========================
-
-Migrations/
-
-# =========================
 # Next.js / Node
 # =========================
 
