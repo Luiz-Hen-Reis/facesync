@@ -73,10 +73,10 @@ export function useCamera() {
       ctx.fillStyle = recognized ? "#22c55e" : "#ef4444";
       ctx.font = "14px sans-serif";
 
-      const label = recognized
-        ? `${name} ${Math.round(similarity * 100)}%`
-        : "Desconhecido";
-      ctx.fillText(label, x, y - 10);
+      if (name) {
+        const label = `${name} ${Math.round(similarity * 100)}%`;
+        ctx.fillText(label, x, y - 10);
+      }
     }
   }, []);
 
