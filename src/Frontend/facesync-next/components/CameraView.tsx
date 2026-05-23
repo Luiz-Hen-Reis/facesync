@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-
-import {
-  ConnectionStatus,
-  RecognitionResult,
-  RegisterStatus,
-} from "../types/face";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useCamera } from "@/hooks/useCamera";
 import { useFaceHub } from "@/hooks/useFaceHub";
+import {
+  ConnectionStatus,
+  DetectedFace,
+  RecognitionResult,
+  RegisterStatus,
+} from "@/types/face";
 
 interface CameraViewProps {
   mode: "register" | "recognize";
@@ -35,7 +35,7 @@ export function CameraView({ mode, userName, onBack }: CameraViewProps) {
     userName,
     captureFrame: camera.captureFrame,
     clearOverlay: camera.clearOverlay,
-    drawBoundingBox: camera.drawBoundingBox,
+    drawFaces: camera.drawFaces,
     stopCameraStream: camera.stopStream,
   });
 
@@ -159,9 +159,7 @@ function ModeBadge({ isRegister }: { isRegister: boolean }) {
       }`}
     >
       <span
-        className={`w-1.5 h-1.5 rounded-full ${
-          isRegister ? "bg-indigo-200" : "bg-emerald-200 animate-pulse"
-        }`}
+        className={`w-1.5 h-1.5 rounded-full ${isRegister ? "bg-indigo-200" : "bg-emerald-200 animate-pulse"}`}
       />
       {isRegister ? "Registro" : "Reconhecimento"}
     </div>
@@ -224,19 +222,27 @@ function RecognitionResultPanel({
 }: {
   result: RecognitionResult | null;
 }) {
+  if (!result || result.faces.length === 0) return <div className="h-14" />;
+
+  const recognized = result.faces.filter((f) => f.recognized);
+  const unknown = result.faces.filter((f) => !f.recognized);
+
   return (
-    <div className="h-14 flex flex-col items-center justify-center">
-      {result && (
-        <>
-          <p
-            className={`text-2xl font-semibold ${result.recognized ? "text-green-400" : "text-red-400"}`}
-          >
-            {result.name ?? "Desconhecido"}
+    <div className="flex flex-wrap justify-center gap-3 min-h-14">
+      {recognized.map((face, i) => (
+        <div key={i} className="text-center">
+          <p className="text-lg font-semibold text-green-400">{face.name}</p>
+          <p className="text-xs text-zinc-400">
+            {(face.similarity * 100).toFixed(1)}%
           </p>
-          <p className="text-sm text-zinc-400 mt-1">
-            Similaridade: {(result.similarity * 100).toFixed(1)}%
+        </div>
+      ))}
+      {unknown.length > 0 && (
+        <div className="text-center">
+          <p className="text-lg font-semibold text-red-400">
+            {unknown.length} desconhecido{unknown.length > 1 ? "s" : ""}
           </p>
-        </>
+        </div>
       )}
     </div>
   );

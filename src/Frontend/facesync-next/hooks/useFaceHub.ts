@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { HubConnection } from "@microsoft/signalr";
 import {
-  BoundingBox,
   ConnectionStatus,
+  DetectedFace,
   RecognitionResult,
   RegisterStatus,
 } from "@/types/face";
@@ -15,12 +15,7 @@ interface UseFaceHubOptions {
   userName?: string;
   captureFrame: () => Promise<string | null>;
   clearOverlay: () => void;
-  drawBoundingBox: (
-    box: BoundingBox | null,
-    label: string,
-    recognized: boolean,
-    similarity: number,
-  ) => void;
+  drawFaces: (faces: DetectedFace[]) => void;
   stopCameraStream: () => void;
 }
 
@@ -30,7 +25,7 @@ export function useFaceHub({
   userName,
   captureFrame,
   clearOverlay,
-  drawBoundingBox,
+  drawFaces,
   stopCameraStream,
 }: UseFaceHubOptions) {
   const connectionRef = useRef(connection);
@@ -95,18 +90,17 @@ export function useFaceHub({
     connection.on("RecognitionResult", (data: RecognitionResult | null) => {
       if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
 
-      if (!data) {
+      if (!data || data.faces.length === 0) {
         clearOverlay();
         setResult(null);
         return;
       }
 
       setResult(data);
-      drawBoundingBox(
-        data.box,
-        mode === "register" ? "" : (data.name ?? "Desconhecido"),
-        data.recognized,
-        data.similarity,
+      drawFaces(
+        mode === "register"
+          ? data.faces.map((f) => ({ ...f, name: null, recognized: false }))
+          : data.faces,
       );
 
       if (
@@ -165,7 +159,7 @@ export function useFaceHub({
     userName,
     captureFrame,
     clearOverlay,
-    drawBoundingBox,
+    drawFaces,
     stopCameraStream,
   ]);
 

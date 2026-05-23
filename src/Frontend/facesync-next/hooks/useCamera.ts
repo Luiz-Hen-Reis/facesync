@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { BoundingBox } from "../types/face";
+import { type DetectedFace } from "@/types/face";
 
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -44,39 +44,41 @@ export function useCamera() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
-  const drawBoundingBox = useCallback(
-    (
-      box: BoundingBox | null,
-      label: string,
-      recognized: boolean,
-      similarity: number,
-    ) => {
-      const canvas = overlayCanvasRef.current;
-      const video = videoRef.current;
-      if (!canvas || !video) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      const dw = video.clientWidth;
-      const dh = video.clientHeight;
-      canvas.width = dw;
-      canvas.height = dh;
-      ctx.clearRect(0, 0, dw, dh);
-      if (!box || (box.width === 0 && box.height === 0)) return;
-      const sx = dw / video.videoWidth;
-      const sy = dh / video.videoHeight;
+  const drawFaces = useCallback((faces: DetectedFace[]) => {
+    const canvas = overlayCanvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dw = video.clientWidth;
+    const dh = video.clientHeight;
+    canvas.width = dw;
+    canvas.height = dh;
+    ctx.clearRect(0, 0, dw, dh);
+
+    const sx = dw / video.videoWidth;
+    const sy = dh / video.videoHeight;
+
+    for (const face of faces) {
+      const { box, recognized, name, similarity } = face;
       const x = box.x * sx;
       const y = box.y * sy;
       const w = box.width * sx;
       const h = box.height * sy;
+
       ctx.strokeStyle = recognized ? "#22c55e" : "#ef4444";
       ctx.lineWidth = 3;
       ctx.strokeRect(x, y, w, h);
+
       ctx.fillStyle = recognized ? "#22c55e" : "#ef4444";
       ctx.font = "14px sans-serif";
-      if (label) ctx.fillText(label, x, y - 10);
-    },
-    [],
-  );
+
+      const label = recognized
+        ? `${name} ${Math.round(similarity * 100)}%`
+        : "Desconhecido";
+      ctx.fillText(label, x, y - 10);
+    }
+  }, []);
 
   return {
     videoRef,
@@ -86,6 +88,6 @@ export function useCamera() {
     stopStream,
     captureFrame,
     clearOverlay,
-    drawBoundingBox,
+    drawFaces,
   };
 }

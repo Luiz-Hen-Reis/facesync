@@ -22,42 +22,30 @@ public class DetectFaceUseCase : IDetectFaceUseCase
         _userFaceReadOnlyRepository = userFaceReadOnlyRepository;
     }
 
-    public async Task<ResponseDetectFace> Execute(
-    RequestDetectFace request)
+    public async Task<ResponseDetectFace> Execute(RequestDetectFace request)
     {
         var imageBytes = ImageHelper.ConvertBase64ToBytes(request.Frame);
-
         var faces = _faceDetectionService.DetectFaces(imageBytes);
 
         if (faces.Length == 0)
-        {
             return null;
-        }
 
-        var face = faces[0];
+        var detectedFaces = new List<DetectedFace>();
 
-        var newEmbedding = _faceRecognitionService.GenerateEmbeddings(imageBytes, face);
-
-        var match = await _userFaceReadOnlyRepository.FindSimilar(newEmbedding, FaceRecognitionConstants.SimilarityThreshold);
-
-        if (match is null)
+        foreach (var face in faces)
         {
-            return new ResponseDetectFace
+            var embedding = _faceRecognitionService.GenerateEmbeddings(imageBytes, face);
+            var match = await _userFaceReadOnlyRepository.FindSimilar(embedding, FaceRecognitionConstants.SimilarityThreshold);
+
+            detectedFaces.Add(new DetectedFace
             {
-                Recognized = false,
-                Name = null,
-                Similarity = 0,
+                Recognized = match is not null,
+                Name = match?.UserFace.Name,
+                Similarity = match?.Similarity ?? 0,
                 Box = new BoundingBox { X = face.X, Y = face.Y, Width = face.Width, Height = face.Height }
-            };
+            });
         }
 
-        return new ResponseDetectFace
-        {
-            Recognized = true,
-            Name = match.Value.UserFace.Name,
-            Similarity = match.Value.Similarity,
-            Box = new BoundingBox { X = face.X, Y = face.Y, Width = face.Width, Height = face.Height }
-        };
-
+        return new ResponseDetectFace { Faces = detectedFaces };
     }
 }

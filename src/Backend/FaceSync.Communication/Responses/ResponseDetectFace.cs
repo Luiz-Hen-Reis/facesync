@@ -2,13 +2,15 @@
 
 public class ResponseDetectFace
 {
+    public List<DetectedFace> Faces { get; set; } = [];
+}
+
+public class DetectedFace
+{
     public bool Recognized { get; set; }
-
     public string? Name { get; set; }
-
-    public double Similarity { get; set; }
-
-    public BoundingBox Box { get; set; } = new BoundingBox();
+    public float Similarity { get; set; }
+    public BoundingBox Box { get; set; } = null!;
 }
 
 public class BoundingBox

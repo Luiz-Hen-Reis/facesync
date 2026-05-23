@@ -5,12 +5,15 @@ export interface BoundingBox {
   height: number;
 }
 
-export interface RecognitionResult {
-  userId: string | null;
+export interface DetectedFace {
+  recognized: boolean;
   name: string | null;
   similarity: number;
   box: BoundingBox;
-  recognized: boolean;
+}
+
+export interface RecognitionResult {
+  faces: DetectedFace[];
 }
 
 export type ConnectionStatus = "disconnected" | "connecting" | "connected";
