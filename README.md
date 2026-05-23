@@ -144,30 +144,34 @@ Caso utilize um PostgreSQL próprio/local, será necessário instalar e habilita
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-Também será necessário configurar a connection string do backend no arquivo:
+#### 3. Configure o backend
+
+O arquivo `appsettings.Development.json` não é versionado no repositório por conter configurações locais do ambiente.
+
+Crie o arquivo:
 
 ```text
 src/Backend/FaceSync.Api/appsettings.Development.json
 ```
 
-Exemplo:
+Utilizando a seguinte estrutura:
 
 ```json
 {
   "ConnectionStrings": {
-    "Default": "Host=localhost;Port=5432;Database=facesync_dev;Username=facesync;Password=facesync123"
+    "PostgresConnection": "Host=localhost;Port=5432;Database=facesync_dev;Username=facesync;Password=facesync123"
   }
 }
 ```
 
-#### 3. Execute o backend
+#### 4. Execute o backend
 
 ```bash
 cd src/Backend/FaceSync.Api
 dotnet run
 ```
 
-#### 4. Execute o frontend
+#### 5. Execute o frontend
 
 ```bash
 cd src/Frontend/facesync-next
@@ -179,9 +183,9 @@ npm run dev
 
 ## Variáveis de ambiente
 
-| Variável                     | Descrição                       | Padrão |
-| ---------------------------- | ------------------------------- | ------ |
-| `ConnectionStrings__Default` | Connection string do PostgreSQL | —      |
+| Variável                                | Descrição                       | Padrão |
+| --------------------------------------- | ------------------------------- | ------ |
+| `ConnectionStrings__PostgresConnection` | Connection string do PostgreSQL | —      |
 
 ---
 
@@ -195,9 +199,11 @@ Baixe o modelo manualmente no repositório oficial do InsightFace:
 
 E coloque o arquivo em:
 
-```text id="1iwwy7"
+```text
 src/Backend/FaceSync.Api/Models/w600k_r50.onnx
 ```
+
+---
 
 ## Detalhes técnicos
 
@@ -275,13 +281,13 @@ facesync/
 ## Créditos
 
 - ArcFace w600k_r50:
-  [https://github.com/deepinsight/insightface](https://github.com/deepinsight/insightface)
+  https://github.com/deepinsight/insightface
 
 - Haar Cascade Classifier:
-  [https://github.com/opencv/opencv](https://github.com/opencv/opencv)
+  https://github.com/opencv/opencv
 
 - pgvector:
-  [https://github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)
+  https://github.com/pgvector/pgvector
 
 ---
 
