@@ -17,6 +17,7 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = true;
 }).AddHubOptions<FaceHub>(options =>
 {
+    options.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
     options.AddFilter<HubExceptionFilter>();
 });
 

@@ -3,7 +3,7 @@ using FaceSync.Communication.Requests;
 using FaceSync.Domain.Entities;
 using FaceSync.Domain.Repositories;
 using FaceSync.Domain.Repositories.UserFace;
-using FaceSync.Infra.DataAccess.Repositories.UserFace;
+using FaceSync.Exceptions.ExceptionBase;
 using FaceSync.Infra.Services.FaceDetection;
 using FaceSync.Infra.Services.FaceRecognition;
 
@@ -11,7 +11,7 @@ namespace FaceSync.Application.UseCases.RegisterFace;
 
 public class RegisterFaceUseCase : IRegisterFaceUseCase
 {
-    private const float SimilarityThreshold = 0.6f;
+    private const float SimilarityThreshold = 0.45f;
 
     private readonly IFaceDetectionService _faceDetectionService;
     private readonly IFaceRecognitionService _faceRecognitionService;
@@ -41,13 +41,13 @@ public class RegisterFaceUseCase : IRegisterFaceUseCase
 
         if (faces.Length == 0)
         {
-            throw new Exception("Nenhum rosto detectado");
+            throw new FaceNotDetectedException();
         }
 
 
         if (faces.Length > 1) 
         {
-            throw new Exception("Mais de um rosto detectado. Envie apenas uma pessoa.");
+            throw new MultipleFacesException();
         }
 
 
@@ -59,7 +59,7 @@ public class RegisterFaceUseCase : IRegisterFaceUseCase
             EmbeddingHelper.CosineSimilarity(u.Embeddings, newEmbedding) > SimilarityThreshold);
 
         if (duplicate is not null)
-            throw new Exception($"Rosto já cadastrado como '{duplicate.Name}'");
+            throw new DuplicateFacesException();
 
         await _userFaceWriteOnlyRepository.Add(new UserFace
         {
