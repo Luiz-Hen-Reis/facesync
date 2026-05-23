@@ -41,7 +41,7 @@ public static class DependencyInjectionExtension
         var connectionString = configuration.ConnectionString();
 
         services.AddDbContext<AppDbContext>(config =>
-            config.UseNpgsql(connectionString));
+            config.UseNpgsql(connectionString, o => o.UseVector()));
     }
 
     private static void AddFluentMigrator(IServiceCollection services, IConfiguration configuration)

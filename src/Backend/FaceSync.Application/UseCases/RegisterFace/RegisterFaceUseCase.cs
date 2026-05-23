@@ -1,4 +1,5 @@
-﻿using FaceSync.Application.Helpers;
+﻿using FaceSync.Application.Constants;
+using FaceSync.Application.Helpers;
 using FaceSync.Communication.Requests;
 using FaceSync.Domain.Entities;
 using FaceSync.Domain.Repositories;
@@ -11,8 +12,6 @@ namespace FaceSync.Application.UseCases.RegisterFace;
 
 public class RegisterFaceUseCase : IRegisterFaceUseCase
 {
-    private const float SimilarityThreshold = 0.45f;
-
     private readonly IFaceDetectionService _faceDetectionService;
     private readonly IFaceRecognitionService _faceRecognitionService;
     private readonly IUserFaceWriteOnlyRepository _userFaceWriteOnlyRepository;
@@ -53,8 +52,7 @@ public class RegisterFaceUseCase : IRegisterFaceUseCase
 
         var newEmbedding = _faceRecognitionService.GenerateEmbeddings(imageBytes, faces[0]);
 
-
-        var duplicate = _userFaceReadOnlyRepository.FindSimilar(newEmbedding, SimilarityThreshold);
+        var duplicate = _userFaceReadOnlyRepository.FindSimilar(newEmbedding, FaceRecognitionConstants.SimilarityThreshold);
 
         if (duplicate is not null)
             throw new DuplicateFacesException();

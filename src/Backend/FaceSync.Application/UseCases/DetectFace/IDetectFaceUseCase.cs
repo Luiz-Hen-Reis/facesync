@@ -5,5 +5,5 @@ namespace FaceSync.Application.UseCases.DetectFace;
 
 public interface IDetectFaceUseCase
 {
-    public ResponseDetectFace Execute(RequestDetectFace request);
+    public Task<ResponseDetectFace> Execute(RequestDetectFace request);
 }

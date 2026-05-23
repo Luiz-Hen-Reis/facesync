@@ -30,7 +30,7 @@ public class FaceHub : Hub
             Frame = frame
         };
 
-        var result = _detectFaceUseCase.Execute(request);
+        var result = await _detectFaceUseCase.Execute(request);
 
         await Clients.Caller.SendAsync("RecognitionResult", result);
     }

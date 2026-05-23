@@ -2,9 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Pgvector;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace FaceSync.Infra.DataAccess.Mappings;
 

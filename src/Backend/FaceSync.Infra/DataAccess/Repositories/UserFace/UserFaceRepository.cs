@@ -19,14 +19,22 @@ public class UserFaceRepository : IUserFaceWriteOnlyRepository, IUserFaceReadOnl
         await _dbContext.AddAsync(userFace);
     }
 
-    public async Task<Domain.Entities.UserFace?> FindSimilar(float[] embeddings, float similarityThreshold)
+    public async Task<(Domain.Entities.UserFace UserFace, float Similarity)?> FindSimilar(float[] embeddings, 
+        float similarityThreshold)
     {
         var vector = new Vector(embeddings);
 
-        return await _dbContext.UserFaces
+        var result = await _dbContext.UserFaces
             .Where(u => u.Embeddings.CosineDistance(vector) <= (1 - similarityThreshold))
             .OrderBy(u => u.Embeddings.CosineDistance(vector))
+            .Select(u => new
+            {
+                UserFace = u,
+                Similarity = 1f - (float)u.Embeddings.CosineDistance(vector)
+            })
             .FirstOrDefaultAsync();
+
+        return result is null ? null : (result.UserFace, result.Similarity);
     }
 
 }
