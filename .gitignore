@@ -80,3 +80,5 @@ coverage/
 
 tmp/
 temp/
+
+src/Backend/FaceSync.Api/Models/*.onnx
