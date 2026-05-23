@@ -53,10 +53,8 @@ public class RegisterFaceUseCase : IRegisterFaceUseCase
 
         var newEmbedding = _faceRecognitionService.GenerateEmbeddings(imageBytes, faces[0]);
 
-        var existing = await _userFaceReadOnlyRepository.ListAll();
 
-        var duplicate = existing.FirstOrDefault(u => 
-            EmbeddingHelper.CosineSimilarity(u.Embeddings, newEmbedding) > SimilarityThreshold);
+        var duplicate = _userFaceReadOnlyRepository.FindSimilar(newEmbedding, SimilarityThreshold);
 
         if (duplicate is not null)
             throw new DuplicateFacesException();

@@ -28,6 +28,8 @@ public class DetectFaceUseCase : IDetectFaceUseCase
 
         var face = faces[0];
 
+
+
         return new ResponseDetectFace
         {
             Recognized = true,

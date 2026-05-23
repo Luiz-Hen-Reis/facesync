@@ -1,4 +1,6 @@
 ﻿using FaceSync.Domain.Repositories.UserFace;
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace FaceSync.Infra.DataAccess.Repositories.UserFace;
@@ -17,8 +19,14 @@ public class UserFaceRepository : IUserFaceWriteOnlyRepository, IUserFaceReadOnl
         await _dbContext.AddAsync(userFace);
     }
 
-    public async Task<List<Domain.Entities.UserFace>> ListAll()
+    public async Task<Domain.Entities.UserFace?> FindSimilar(float[] embeddings, float similarityThreshold)
     {
-        return await _dbContext.UserFaces.AsNoTracking().ToListAsync();
+        var vector = new Vector(embeddings);
+
+        return await _dbContext.UserFaces
+            .Where(u => u.Embeddings.CosineDistance(vector) <= (1 - similarityThreshold))
+            .OrderBy(u => u.Embeddings.CosineDistance(vector))
+            .FirstOrDefaultAsync();
     }
+
 }

@@ -2,5 +2,5 @@
 
 public interface IUserFaceReadOnlyRepository
 {
-    Task<List<Entities.UserFace>> ListAll();
+    Task<Entities.UserFace?> FindSimilar(float[] embeddings, float similarityThreshold);
 }
