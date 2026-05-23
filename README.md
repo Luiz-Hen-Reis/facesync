@@ -185,6 +185,20 @@ npm run dev
 
 ---
 
+## Modelo ONNX
+
+O modelo `w600k_r50.onnx` não é versionado no repositório devido ao limite de tamanho de arquivos do GitHub.
+
+Baixe o modelo manualmente no repositório oficial do InsightFace:
+
+- https://github.com/deepinsight/insightface
+
+E coloque o arquivo em:
+
+```text id="1iwwy7"
+src/Backend/FaceSync.Api/Models/w600k_r50.onnx
+```
+
 ## Detalhes técnicos
 
 ### Similaridade coseno e threshold
