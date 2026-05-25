@@ -1,160 +1,130 @@
-# FaceSync
+# FaceSync 👤🔄
 
-Sistema de reconhecimento facial em tempo real com detecção e registro de rostos via câmera, utilizando WebSocket para comunicação bidirecional entre frontend e backend.
+Sistema de reconhecimento facial em tempo real com detecção e registro de rostos via câmera. O projeto utiliza WebSocket para garantir comunicação bidirecional de baixa latência entre o frontend e o backend.
 
----
+## 🚀 Demonstração de Uso
 
-## Demonstração
+O fluxo principal da aplicação é simples e direto:
 
 ```text
-Abriu o app → Escolhe Registrar ou Reconhecer
+Acesso ao App → Escolha da Ação (Registrar ou Reconhecer)
      │
-     ├── Registrar → Informa nome → Câmera detecta rosto → Registra automaticamente
+     ├── Registrar: Informa o nome → Câmera detecta rosto → Registro automático
      │
-     └── Reconhecer → Câmera identifica rostos em tempo real → Exibe nome e similaridade
+     └── Reconhecer: Câmera identifica rostos em tempo real → Exibe nome e similaridade
+
 ```
 
 ---
 
-## Stack
+## 🛠️ Stack Tecnológico
 
 ### Backend
 
-| Tecnologia            | Uso                                                  |
-| --------------------- | ---------------------------------------------------- |
-| ASP.NET Core 10       | API e SignalR Hub                                    |
-| SignalR               | Comunicação em tempo real (WebSocket)                |
-| OpenCvSharp           | Detecção de rostos via Haar Cascade                  |
-| ONNX Runtime          | Geração de embeddings com modelo ArcFace (w600k_r50) |
-| Entity Framework Core | ORM                                                  |
-| pgvector              | Busca por similaridade vetorial no PostgreSQL        |
-| FluentMigrator        | Migrations do banco de dados                         |
-| PostgreSQL 16         | Banco de dados                                       |
-| Docker                | Containerização                                      |
+| Tecnologia | Finalidade |
+| --- | --- |
+| **ASP.NET Core 10** | API REST e SignalR Hub |
+| **SignalR** | Comunicação em tempo real (WebSocket) |
+| **OpenCvSharp** | Detecção de rostos via Haar Cascade |
+| **ONNX Runtime** | Geração de embeddings com modelo ArcFace (w600k_r50) |
+| **EF Core** | Mapeamento Objeto-Relacional (ORM) |
+| **pgvector** | Busca por similaridade vetorial nativa no banco |
+| **FluentMigrator** | Gerenciamento de migrations do banco de dados |
+| **PostgreSQL 16** | Banco de dados principal |
 
 ### Frontend
 
-| Tecnologia              | Uso                             |
-| ----------------------- | ------------------------------- |
-| Next.js 14 (App Router) | Framework React                 |
-| TypeScript              | Tipagem estática                |
-| Tailwind CSS            | Estilização                     |
-| SignalR Client          | Comunicação com o hub           |
-| Canvas API              | Renderização dos bounding boxes |
+| Tecnologia | Finalidade |
+| --- | --- |
+| **Next.js 14** | Framework React (App Router) |
+| **TypeScript** | Tipagem estática e segurança de código |
+| **Tailwind CSS** | Estilização utilitária |
+| **SignalR Client** | Comunicação com o hub do backend |
+| **Canvas API** | Renderização dos bounding boxes no vídeo |
 
 ---
 
-## Arquitetura
+## 🏗️ Arquitetura
 
-O projeto segue uma arquitetura em camadas inspirada em Clean Architecture:
+O projeto segue uma arquitetura em camadas inspirada na **Clean Architecture**, visando separação de responsabilidades e manutenibilidade:
 
 ```text
-FaceSync.Api             → Controllers, Hubs, Filters
-FaceSync.Application     → Use Cases, Helpers, Constants
-FaceSync.Domain          → Entities, Interfaces de Repositório
-FaceSync.Communication   → Requests e Responses (DTOs)
-FaceSync.Infra           → Repositórios, Serviços, Migrations
-FaceSync.Exceptions      → Exceções customizadas
+FaceSync.Api           → Controllers, Hubs, Filters
+FaceSync.Application   → Use Cases, Helpers, Constants
+FaceSync.Domain        → Entities, Interfaces de Repositório
+FaceSync.Communication → Requests e Responses (DTOs)
+FaceSync.Infra         → Repositórios, Serviços, Migrations
+FaceSync.Exceptions    → Exceções customizadas
+
 ```
 
-### Fluxo de reconhecimento
+### Fluxo de Reconhecimento
 
 ```text
-Frontend (câmera)
-    │  frame (base64 JPEG)
+Frontend (Frame em base64 JPEG)
     ▼
 SignalR Hub → DetectFaceUseCase
-    │  OpenCV detecta rosto(s) na imagem
-    │  ONNX Runtime gera embedding (vetor de 512 floats)
-    │  pgvector busca por similaridade coseno no banco
+    │ (1) OpenCV detecta rosto(s) na imagem
+    │ (2) ONNX Runtime gera embedding (vetor de 512 floats)
+    │ (3) pgvector busca por similaridade coseno no banco
     ▼
-RecognitionResult → Frontend
-    │  bounding box + nome + similaridade por rosto
+RecognitionResult (Bounding box + nome + similaridade)
     ▼
-Canvas API desenha os retângulos em cima do vídeo
+Frontend (Canvas API desenha os retângulos sobre o vídeo)
+
 ```
 
-### Fluxo de registro
+### Fluxo de Registro
 
 ```text
 Frontend detecta rosto via SendFrame
-    │  rosto encontrado → aguarda 1.5s para estabilizar
     ▼
-RegisterFace → RegisterFaceUseCase
-    │  detecta e valida (1 rosto, sem duplicatas)
-    │  gera embedding com ArcFace
-    │  verifica similaridade coseno com registros existentes
-    │  threshold: 0.45 (rejeita se >= 45% similar a alguém cadastrado)
+Aguarda 1.5s para estabilização
     ▼
-Salva no PostgreSQL com coluna vector(512)
+RegisterFaceUseCase
+    │ (1) Detecta e valida (exige 1 rosto, bloqueia duplicatas)
+    │ (2) Gera embedding com ArcFace
+    │ (3) Verifica similaridade coseno com registros existentes
+    │ (4) Rejeita se a similaridade for >= 45% com alguém já cadastrado
+    ▼
+Salva no PostgreSQL na coluna vector(512)
+
 ```
 
 ---
 
-## Pré-requisitos
+## ⚙️ Pré-requisitos
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 18+](https://nodejs.org/)
-- [Docker](https://www.docker.com/)
+Certifique-se de ter as seguintes ferramentas instaladas em seu ambiente:
 
----
-
-## Instalação e execução
-
-### Execução com Docker Compose (recomendado)
-
-```bash
-docker compose up --build
-```
-
-O ambiente será iniciado com:
-
-- PostgreSQL 16 + pgvector
-- Backend ASP.NET Core
-- Frontend Next.js
-
-Após iniciar:
-
-- Frontend → `http://localhost:3000`
-- Backend → `https://localhost:7026`
-
-> [!NOTE]
-> Este projeto não utiliza arquivos `.env` para armazenar portas, URLs de conexão ou configurações locais, com o objetivo de simplificar a execução e reduzir etapas de configuração, já que se trata de um projeto pessoal/prático.
->
-> Caso exista conflito de portas ou necessidade de adaptação para outro ambiente, ajuste manualmente os valores conforme necessário nos arquivos de configuração do backend, frontend ou `docker-compose.yml`.
+* [.NET 10 SDK](https://dotnet.microsoft.com/download)
+* [Node.js 18+](https://nodejs.org/)
+* [Docker](https://www.docker.com/) (para subir a instância do PostgreSQL via Docker Compose)
 
 ---
 
-### Execução manual
+## 🚀 Instalação e Execução
 
-#### 1. Clone o repositório
+**1. Clone o repositório**
 
 ```bash
 git clone https://github.com/Luiz-Hen-Reis/facesync.git
 cd facesync
+
 ```
 
-#### 2. Configure o PostgreSQL
+**2. Suba o Banco de Dados**
+O projeto utiliza o `docker-compose.yml` exclusivamente para disponibilizar o PostgreSQL 16 com a extensão `pgvector`.
 
-O projeto utiliza PostgreSQL 16 com a extensão `pgvector` para busca vetorial por similaridade.
+```bash
+docker compose up -d postgres
 
-Caso utilize um PostgreSQL próprio/local, será necessário instalar e habilitar manualmente a extensão:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-#### 3. Configure o backend
+> **Nota:** Caso utilize um PostgreSQL local fora do Docker, execute `CREATE EXTENSION IF NOT EXISTS vector;` no seu banco.
 
-O arquivo `appsettings.Development.json` não é versionado no repositório por conter configurações locais do ambiente.
-
-Crie o arquivo:
-
-```text
-src/Backend/FaceSync.Api/appsettings.Development.json
-```
-
-Utilizando a seguinte estrutura:
+**3. Configure o Backend**
+Crie o arquivo de configurações locais (`appsettings.Development.json`) no diretório `src/Backend/FaceSync.Api/` com o seguinte conteúdo:
 
 ```json
 {
@@ -162,70 +132,57 @@ Utilizando a seguinte estrutura:
     "PostgresConnection": "Host=localhost;Port=5432;Database=facesync_dev;Username=facesync;Password=facesync123"
   }
 }
+
 ```
 
-#### 4. Execute o backend
+**4. Adicione o Modelo ONNX**
+Devido aos limites de tamanho do GitHub, o modelo `w600k_r50.onnx` não é versionado.
+
+* Baixe o modelo no repositório oficial do [InsightFace](https://github.com/deepinsight/insightface).
+* Salve o arquivo no diretório: `src/Backend/FaceSync.Api/Models/w600k_r50.onnx`
+
+**5. Execute a API (Backend)**
 
 ```bash
 cd src/Backend/FaceSync.Api
 dotnet run
+
 ```
 
-#### 5. Execute o frontend
+**6. Execute a Aplicação Web (Frontend)**
+Em um novo terminal:
 
 ```bash
 cd src/Frontend/facesync-next
 npm install
 npm run dev
+
 ```
 
 ---
 
-## Variáveis de ambiente
+## 🧠 Detalhes Técnicos
 
-| Variável                                | Descrição                       | Padrão |
-| --------------------------------------- | ------------------------------- | ------ |
-| `ConnectionStrings__PostgresConnection` | Connection string do PostgreSQL | —      |
+### Similaridade Coseno e Threshold
 
----
+Cada rosto registrado gera um vetor de 512 números (embedding). O sistema compara novos rostos com os já cadastrados utilizando a **similaridade coseno** (quanto mais próximo de 1, mais parecidos).
 
-## Modelo ONNX
+O threshold padrão é **0.45**:
 
-O modelo `w600k_r50.onnx` não é versionado no repositório devido ao limite de tamanho de arquivos do GitHub.
+* **Valor >= 0.45:** Mesmo rosto (reconhece o usuário ou bloqueia cadastro duplicado).
+* **Valor < 0.45:** Rosto diferente (marca como desconhecido ou permite novo cadastro).
 
-Baixe o modelo manualmente no repositório oficial do InsightFace:
-
-- https://github.com/deepinsight/insightface
-
-E coloque o arquivo em:
-
-```text
-src/Backend/FaceSync.Api/Models/w600k_r50.onnx
-```
-
----
-
-## Detalhes técnicos
-
-### Similaridade coseno e threshold
-
-Cada rosto registrado gera um vetor de 512 números (embedding). O sistema compara novos rostos com os cadastrados usando similaridade coseno — quanto mais próximo de 1, mais parecidos os rostos.
-
-O threshold padrão é `0.45`:
-
-- `>= 0.45` → mesmo rosto (bloqueia cadastro duplicado / reconhece como pessoa cadastrada)
-- `< 0.45` → rosto diferente (permite cadastro / marca como desconhecido)
-
-O valor pode ser ajustado em:
+Ajuste essa constante no backend caso necessário:
 
 ```csharp
 // FaceSync.Application/Constants/FaceRecognitionConstants.cs
 public const float SimilarityThreshold = 0.45f;
+
 ```
 
-### Busca vetorial com pgvector
+### Busca Vetorial Direto no Banco (pgvector)
 
-Em vez de trazer todos os registros para a memória e filtrar em C#, a busca de similaridade é feita diretamente no banco:
+Para garantir performance, a busca de similaridade não carrega os registros na memória do C#. Ela é executada nativamente no banco de dados através da extensão `pgvector`:
 
 ```sql
 SELECT *, 1 - ("Embeddings" <=> query_vector) AS similarity
@@ -233,64 +190,43 @@ FROM "UserFaces"
 WHERE ("Embeddings" <=> query_vector) <= threshold
 ORDER BY "Embeddings" <=> query_vector
 LIMIT 1;
+
 ```
 
-### Tratamento de erros no Hub
+### Tratamento de Erros no SignalR
 
-Todas as exceções de domínio herdam de `AppException` e são capturadas pelo `HubExceptionFilter`, que envia a mensagem de erro ao cliente via evento `"Error"` sem derrubar a conexão.
+Todas as exceções de domínio herdam da classe base `AppException`. Elas são capturadas pelo `HubExceptionFilter`, que intercepta a falha e envia a mensagem de erro ao cliente pelo evento `"Error"`, mantendo a conexão WebSocket ativa e estável.
 
 ---
 
-## Estrutura de pastas
+## 📂 Estrutura de Pastas
 
 ```text
 facesync/
 ├── src/
 │   ├── Backend/
-│   │   ├── FaceSync.Api/
-│   │   │   ├── Hubs/           → FaceHub (SignalR)
-│   │   │   ├── Filters/        → HubExceptionFilter
-│   │   │   ├── Models/
-│   │   │   └── CascadeClassifiers/
-│   │   ├── FaceSync.Application/
-│   │   │   ├── UseCases/       → RegisterFace, DetectFace
-│   │   │   ├── Constants/      → FaceRecognitionConstants
-│   │   │   └── Helpers/        → ImageHelper, EmbeddingHelper
-│   │   ├── FaceSync.Domain/
-│   │   │   ├── Entities/       → UserFace
-│   │   │   └── Repositories/   → Interfaces
-│   │   ├── FaceSync.Infra/
-│   │   │   ├── DataAccess/     → AppDbContext, Repositórios, Mappings
-│   │   │   ├── Migrations/     → FluentMigrator versions
-│   │   │   └── Services/       → FaceDetection, FaceRecognition
-│   │   ├── FaceSync.Communication/
-│   │   │   ├── Requests/
-│   │   │   └── Responses/
-│   │   └── FaceSync.Exceptions/
+│   │   ├── FaceSync.Api/          (Hubs, Filters, Models, Classifiers)
+│   │   ├── FaceSync.Application/  (Use Cases, Constants, Helpers)
+│   │   ├── FaceSync.Domain/       (Entities, Repository Interfaces)
+│   │   ├── FaceSync.Infra/        (DbContext, Repositories, Migrations, Services)
+│   │   ├── FaceSync.Communication/(DTOs: Requests, Responses)
+│   │   └── FaceSync.Exceptions/   (Exceções customizadas)
 │   └── Frontend/
-│       └── facesync-next/
-│           ├── app/
-│           ├── types/
-│           ├── hooks/
-│           └── components/
+│       └── facesync-next/         (App Router, Types, Hooks, Components)
 └── docker-compose.yml
+
 ```
 
 ---
 
-## Créditos
+## 📜 Créditos
 
-- ArcFace w600k_r50:
-  https://github.com/deepinsight/insightface
-
-- Haar Cascade Classifier:
-  https://github.com/opencv/opencv
-
-- pgvector:
-  https://github.com/pgvector/pgvector
+* **ArcFace w600k_r50:** [deepinsight/insightface](https://github.com/deepinsight/insightface)
+* **Haar Cascade Classifier:** [opencv/opencv](https://github.com/opencv/opencv)
+* **pgvector:** [pgvector/pgvector](https://github.com/pgvector/pgvector)
 
 ---
 
-## Licença
+## 📄 Licença
 
-MIT
+Distribuído sob a licença **MIT**.
